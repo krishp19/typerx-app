@@ -11,6 +11,7 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.22.11",
     "@clerk/nextjs": "^6.11.1",
+    "@reduxjs/toolkit": "^2.5.1",
     "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.7",
@@ -20,6 +21,7 @@
     "pg": "^8.13.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-redux": "^9.2.0",
     "react-toastify": "^11.0.3",
     "sequelize": "^6.37.5"
   },
