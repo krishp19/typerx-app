@@ -9,6 +9,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Provider } from "react-redux";
 import {store} from '../redux/store.js'
+import { TypingStatsProvider } from '../context/typingStatsContext.js'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,14 +34,16 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Provider store={store}>
-        <ClerkProvider>
-          <ToastContainer/>
-            <CustomNavbar/>
-              <main className="p-24">
-                {children}
-              </main>
-            <Footer/> 
-        </ClerkProvider>
+          <TypingStatsProvider>
+            <ClerkProvider>
+              <ToastContainer/>
+                <CustomNavbar/>
+                  <main className="p-24">
+                    {children}
+                  </main>
+              <Footer/> 
+            </ClerkProvider>
+          </TypingStatsProvider>
         </Provider>
       </body>
     </html>

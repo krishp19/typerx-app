@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { updateStats } from '../../redux/features/typingSlice.js'
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:3001");
 
 const sampleTexts = [
   "In the quiet town of Willowbrook, nestled between rolling hills and dense forests, a young writer named Clara found inspiration in the rustling leaves and the distant chirping of birds. Every morning, she would sit by the window of her small cottage, sipping coffee while watching the golden sunrise. Words flowed effortlessly onto the pages of her worn-out journal, each sentence painting a picture of the world as she saw it. Writing was not just a passion for Clara; it was an escape, a way to immortalize fleeting moments in time.",
@@ -23,14 +26,37 @@ function Arena() {
   const [entries, setEntries] = useState(0);
 
   const dispatch = useDispatch();
-  const { averageWpm, averageAccuracy } = useSelector((state) => state.typing);
+  const { averageWpm, averageAccuracy, totalSessions } = useSelector((state) => state.typing);
 
   useEffect(() => {
     if (time === 0) {
       dispatch(updateStats({ wpm, accuracy }));
-      console.log("Dispatched updateStats:", { wpm, accuracy });
+
+      const userId = localStorage.getItem("userId") || `user_${Math.floor(Math.random() * 1000)}`;
+      socket.emit("updateStats", { userId, wpm, accuracy });
+
+      console.log("Sent to server:", { userId, wpm, accuracy });
     }
   }, [time, dispatch, wpm, accuracy]);
+  useEffect(() => {
+    if (time === 0) {
+      dispatch(updateStats({ wpm, accuracy }));
+  
+      // Send stats to the server once when the timer reaches 0
+      socket.emit("updateStats", { wpm, accuracy, averageWpm, averageAccuracy, totalSessions });
+      console.log("Sent to server:", { wpm, accuracy, averageWpm, averageAccuracy, totalSessions });
+    }
+  }, [time]); 
+
+  useEffect(() => {
+    socket.on("statsUpdated", (data) => {
+      console.log("Stats updated from server:", data);
+    });
+
+    return () => {
+      socket.off("statsUpdated");
+    };
+  }, []);
 
   const generateRandomText = () => {
     const newText = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];

@@ -7,6 +7,7 @@ const initialState = {
   sessions: 0,
   totalWpm: 0,
   totalAccuracy: 0,
+  totalSessions: 0, // Added totalSessions
 };
 
 const typingSlice = createSlice({
@@ -18,6 +19,7 @@ const typingSlice = createSlice({
       state.totalWpm += wpm;
       state.totalAccuracy += accuracy;
       state.sessions += 1;
+      state.totalSessions += 1; // Track total sessions
       state.averageWpm = Math.floor(state.totalWpm / state.sessions);
       state.averageAccuracy = Math.floor(state.totalAccuracy / state.sessions);
     },
@@ -27,6 +29,7 @@ const typingSlice = createSlice({
       state.sessions = 0;
       state.totalWpm = 0;
       state.totalAccuracy = 0;
+      state.totalSessions = 0; // Reset total sessions
     },
   },
 });
