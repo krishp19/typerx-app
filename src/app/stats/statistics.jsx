@@ -3,6 +3,7 @@ import { useUser } from '@clerk/clerk-react';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
 import io from "socket.io-client";
+import SpeedChart from '../../components/reactChart';
 
 const socket = io("http://localhost:3001");
 
@@ -12,23 +13,25 @@ function Statistics() {
     averageWpm: 0,
     averageAccuracy: 100,
     totalSessions: 0,
+    sessionHistory: [] // Ensure it's always an array
   });
-
+  
   useEffect(() => {
     if (user?.id) {
       fetch(`/api/stats?userId=${user.id}`)
         .then((res) => res.json())
         .then((data) => {
-          if (data.error) {
-            console.error("Error fetching stats:", data.error);
-          } else {
-            console.log("Fetched stats from server:", data);
-            setStats(data);
+          if (!data.error) {
+            setStats({
+              ...data,
+              sessionHistory: data.sessionHistory || [] // Ensure it's always an array
+            });
           }
         })
         .catch((err) => console.error("❌ Fetch error:", err));
     }
   }, [user]);
+  
 
   return (
     <div>
@@ -85,20 +88,11 @@ function Statistics() {
                 </div>
               </div>
 
-              <div className="bg-neutral-800 rounded-xl p-6 mb-12 animate__animated animate__fadeInUp">
+              <div className="bg-neutral-800 rounded-xl p-6 mb-12">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-semibold text-white">Speed Progress</h3>
-                  <select className="bg-neutral-700 text-green-400 rounded-lg px-4 py-2 border border-neutral-600 focus:outline-none focus:border-green-400">
-                    <option>Last 7 days</option>
-                    <option>Last 30 days</option>
-                    <option>Last 90 days</option>
-                  </select>
                 </div>
-                <div className="h-64 bg-neutral-900 rounded-lg p-4">
-                  <div className="w-full h-full flex items-center justify-center text-neutral-400">
-                    Interactive chart will be rendered here
-                  </div>
-                </div>
+                <SpeedChart sessionHistory={stats.sessionHistory} />
               </div>
 
               <div className="grid md:grid-cols-2 gap-8 animate__animated animate__fadeInUp">
