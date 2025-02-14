@@ -1,6 +1,25 @@
 "use client"
 
+import { useEffect, useState } from "react";
+
 function Leaderboard(){
+
+  const [leaderboard, setLeaderboard] = useState([]);
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        const res = await fetch("/api/leaderboard");
+        const data = await res.json();
+        setLeaderboard(data);
+      } catch (error) {
+        console.error("Error fetching leaderboard:", error);
+      }
+    };
+
+    fetchLeaderboard();
+  }, []);
+
     return(
         <div>
             <div id="root">
@@ -38,82 +57,37 @@ function Leaderboard(){
 
   
       <div className="bg-neutral-900 rounded-xl shadow-lg overflow-hidden animate__animated animate__fadeInUp">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-neutral-800">
-              <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Rank</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Player</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">WPM</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Accuracy</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Tests</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Points</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-800">
-      
-            <tr className="bg-green-400/5">
-              <td className="px-6 py-4"><span className="text-yellow-400 font-bold">#1</span></td>
-              <td className="px-6 py-4 flex items-center space-x-3">
-                <div className="w-8 h-8 bg-green-400 rounded-full flex items-center justify-center text-neutral-900 font-bold">S</div>
-                <span className="text-white">SpeedMaster</span>
-                <span className="bg-green-400/20 text-green-400 px-2 py-1 rounded-full text-xs">Pro</span>
+      <table className="w-full">
+        <thead>
+          <tr className="bg-neutral-800">
+            <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Rank</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Player</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">WPM</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Accuracy</th>
+            <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Tests</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-neutral-800">
+          {leaderboard.length > 0 ? (
+            leaderboard.map((user, index) => (
+              <tr key={user.userId} className="bg-green-400/5 hover:bg-neutral-800/50 transition-colors duration-200">
+                <td className="px-6 py-4 text-yellow-400 font-bold">#{index + 1}</td>
+                <td className="px-6 py-4 text-white">{user.username || "Anonymous"}</td>
+                <td className="px-6 py-4 text-green-400">{user.averageWpm}</td>
+                <td className="px-6 py-4 text-green-400">{user.averageAccuracy}%</td>
+                <td className="px-6 py-4 text-neutral-400">{user.totalSessions}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="5" className="text-center py-4 text-neutral-400">
+                No leaderboard data available.
               </td>
-              <td className="px-6 py-4 text-green-400">156</td>
-              <td className="px-6 py-4 text-green-400">99.8%</td>
-              <td className="px-6 py-4 text-neutral-400">1,234</td>
-              <td className="px-6 py-4 text-green-400">10,500</td>
             </tr>
-            <tr className="bg-neutral-800/5">
-              <td className="px-6 py-4"><span className="text-gray-300 font-bold">#2</span></td>
-              <td className="px-6 py-4 flex items-center space-x-3">
-                <div className="w-8 h-8 bg-neutral-700 rounded-full flex items-center justify-center text-white font-bold">T</div>
-                <span className="text-white">TypeNinja</span>
-              </td>
-              <td className="px-6 py-4 text-green-400">152</td>
-              <td className="px-6 py-4 text-green-400">99.5%</td>
-              <td className="px-6 py-4 text-neutral-400">956</td>
-              <td className="px-6 py-4 text-green-400">9,800</td>
-            </tr>
-            <tr className="bg-yellow-900/5">
-              <td className="px-6 py-4"><span className="text-yellow-700 font-bold">#3</span></td>
-              <td className="px-6 py-4 flex items-center space-x-3">
-                <div className="w-8 h-8 bg-neutral-700 rounded-full flex items-center justify-center text-white font-bold">K</div>
-                <span className="text-white">KeyWarrior</span>
-              </td>
-              <td className="px-6 py-4 text-green-400">149</td>
-              <td className="px-6 py-4 text-green-400">99.2%</td>
-              <td className="px-6 py-4 text-neutral-400">878</td>
-              <td className="px-6 py-4 text-green-400">9,200</td>
-            </tr>
-
-     
-            <tr className="hover:bg-neutral-800/50 transition-colors duration-200">
-              <td className="px-6 py-4 text-neutral-400">#4</td>
-              <td className="px-6 py-4 flex items-center space-x-3">
-                <div className="w-8 h-8 bg-neutral-700 rounded-full flex items-center justify-center text-white font-bold">R</div>
-                <span className="text-white">RapidKeys</span>
-              </td>
-              <td className="px-6 py-4 text-green-400">145</td>
-              <td className="px-6 py-4 text-green-400">98.9%</td>
-              <td className="px-6 py-4 text-neutral-400">756</td>
-              <td className="px-6 py-4 text-green-400">8,900</td>
-            </tr>
-          </tbody>
-        </table>
-
- 
-        <div className="bg-neutral-800 px-6 py-4 flex justify-between items-center">
-          <button className="px-4 py-2 text-green-400 hover:bg-neutral-700 rounded-lg transition-colors duration-200">Previous</button>
-          <div className="flex space-x-2">
-            <button className="w-8 h-8 flex items-center justify-center bg-green-400 text-neutral-900 rounded">1</button>
-            <button className="w-8 h-8 flex items-center justify-center text-green-400 hover:bg-neutral-700 rounded">2</button>
-            <button className="w-8 h-8 flex items-center justify-center text-green-400 hover:bg-neutral-700 rounded">3</button>
-            <span className="w-8 h-8 flex items-center justify-center text-neutral-400">...</span>
-            <button className="w-8 h-8 flex items-center justify-center text-green-400 hover:bg-neutral-700 rounded">10</button>
-          </div>
-          <button className="px-4 py-2 text-green-400 hover:bg-neutral-700 rounded-lg transition-colors duration-200">Next</button>
-        </div>
-      </div>
+          )}
+        </tbody>
+      </table>
+    </div>
     </div>
   </section>
 </div>
