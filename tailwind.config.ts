@@ -11,6 +11,7 @@ export default {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        'warm-beige': 'rgb(245 222 179 / var(--tw-text-opacity, 1))',
       },
     },
   },

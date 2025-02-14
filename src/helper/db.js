@@ -1,25 +1,20 @@
 import mongoose from "mongoose";
 
-let isConnected = false; // Global variable to track connection status
+const MONGO_URI = process.env.MONGO_DB_URL;
 
-export const connectDb = async () => {
-  if (isConnected) {
-    console.log("Database already connected.");
+if (!MONGO_URI) {
+  throw new Error("❌ MONGO_URI is not defined in environment variables.");
+}
+
+const connectDB = async () => {
+  if (mongoose.connection.readyState >= 1) {
     return;
   }
-
-  try {
-    const { connection } = await mongoose.connect(process.env.MONGO_DB_URL, {
-      dbName: "TyperX-manager",
-      useNewUrlParser: true, 
-      useUnifiedTopology: true, 
-    });
-
-    isConnected = connection.readyState === 1; // Set connection status
-    console.log("✅ Database connected successfully!");
-    console.log("🔗 Connected with host:", connection.host);
-  } catch (error) {
-    console.error("❌ Failed to connect to the database!", error);
-    process.exit(1); // Exit process on failure
-  }
+  await mongoose.connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
+  console.log("✅ Connected to MongoDB");
 };
+
+export default connectDB;

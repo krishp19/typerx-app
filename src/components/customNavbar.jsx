@@ -3,6 +3,7 @@
 import { UserButton, useUser } from "@clerk/clerk-react"
 import Link from "next/link"
 import dynamic from "next/dynamic"
+import Image from "next/image"
 
 // Dynamically import the UserButton component with SSR disabled
 const UserButtonClientSide = dynamic(() => import("@clerk/clerk-react").then(mod => mod.UserButton), {
@@ -24,16 +25,16 @@ export default function CustomNavbar() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="el-e1uoqqjy">
             <div className="flex justify-between items-center h-16">
               <div className="flex-shrink-0">
-                {/* Add logo or other components here */}
+              <Image src="/logo.webp" alt="GFG logo" width={50} height={50} />
               </div>
 
               <div className="hidden md:flex items-center space-x-8">
-                <Link href="/" className="text-green-400 hover:text-green-300 transition-colors duration-200">Home</Link>
-                <Link href="/arena" className="text-green-400 hover:text-green-300 transition-colors duration-200">Arena</Link>
-                <Link href="/board" className="text-green-400 hover:text-green-300 transition-colors duration-200">Leaderboard</Link>
-                <Link href="/multiplayer" className="text-green-400 hover:text-green-300 transition-colors duration-200">Multiplayer</Link>
-                <Link href="/practice" className="text-green-400 hover:text-green-300 transition-colors duration-200">Practice</Link>
-                <Link href="/stats" className="text-green-400 hover:text-green-300 transition-colors duration-200">Statistics</Link>
+                <Link href="/" className="relative text-green-400 hover:text-green-300 transition-colors duration-200 after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-green-300 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100">Home</Link>
+                <Link href="/arena" className="relative text-green-400 hover:text-green-300 transition-colors duration-200 after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-green-300 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100">Arena</Link>
+                <Link href="/board" className="relative text-green-400 hover:text-green-300 transition-colors duration-200 after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-green-300 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100">Leaderboard</Link>
+                <Link href="/multiplayer" className="relative text-green-400 hover:text-green-300 transition-colors duration-200 after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-green-300 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100">Multiplayer</Link>
+                <Link href="/practice" className="relative text-green-400 hover:text-green-300 transition-colors duration-200 after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-green-300 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100">Practice</Link>
+                <Link href="/stats" className="relative text-green-400 hover:text-green-300 transition-colors duration-200 after:absolute after:left-0 after:bottom-0 after:w-full after:h-[2px] after:bg-green-300 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100">Statistics</Link>
               </div>
 
               <div className="hidden md:flex items-center space-x-4">

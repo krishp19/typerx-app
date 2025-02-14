@@ -6,25 +6,37 @@ const io = new Server(3001, {
   },
 });
 
-const users = {}; // Store users with persistent IDs
+// Store stats per Clerk user ID
+let userStats = {};
 
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  // Assign a custom user ID if not provided
+  // Register user and send their stats
   socket.on("registerUser", (userId) => {
-    users[socket.id] = userId;
-    console.log(`User Registered: ${userId} (Socket ID: ${socket.id})`);
+    if (!userStats[userId]) {
+      userStats[userId] = { averageWpm: 0, averageAccuracy: 100, totalSessions: 0,sessionHistory: [] };
+    }
+    socket.emit("fetchStats", userStats[userId]); // Send stats to the frontend
   });
 
-  socket.on("updateStats", (data) => {
-    console.log(`Stats received from ${users[socket.id] || socket.id}:`, data);
-    io.emit("statsUpdated", { user: users[socket.id] || "Guest", ...data });
+  // Update stats for the specific user
+  socket.on("updateStats", ({ userId, wpm, accuracy }) => {
+    if (!userStats[userId]) return; 
+
+    let user = userStats[userId];
+    user.totalSessions += 1;
+    user.averageWpm = ((user.averageWpm * (user.totalSessions - 1)) + wpm) / user.totalSessions;
+    user.averageAccuracy = ((user.averageAccuracy * (user.totalSessions - 1)) + accuracy) / user.totalSessions;
+
+    const sessionDate = new Date().toISOString();
+    user.sessionHistory.push({ wpm, accuracy, date: sessionDate });
+
+    io.to(socket.id).emit("statsUpdated", user);
   });
 
   socket.on("disconnect", () => {
     console.log(`User disconnected: ${socket.id}`);
-    delete users[socket.id]; // Remove user on disconnect
   });
 });
 

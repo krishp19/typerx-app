@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css?family=Anonymous+Pro');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -18,4 +19,29 @@ body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* Cursor effect */
+.cursor {
+    display: inline-block;
+    border-right: 3px solid rgba(255, 255, 255, 0.75);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+/* Typewriter Animation */
+.typewriter-animation {
+    animation: typewriter 3s steps(20) 1s 1 normal both,
+               blinkingCursor 600ms steps(50) infinite normal;
+}
+
+@keyframes typewriter {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+@keyframes blinkingCursor {
+  from { border-right-color: rgba(255,255,255,.75); }
+  to { border-right-color: transparent; }
 }
