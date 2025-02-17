@@ -1,19 +1,24 @@
 "use client"
 
 import { useEffect, useState } from "react";
+import { ClipLoader } from "react-spinners";
 
 function Leaderboard(){
 
   const [leaderboard, setLeaderboard] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+    useEffect(() => {
     const fetchLeaderboard = async () => {
       try {
+        setLoading(true);
         const res = await fetch("/api/leaderboard");
         const data = await res.json();
         setLeaderboard(data);
       } catch (error) {
         console.error("Error fetching leaderboard:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -57,36 +62,44 @@ function Leaderboard(){
 
   
       <div className="bg-neutral-900 rounded-xl shadow-lg overflow-hidden animate__animated animate__fadeInUp">
-      <table className="w-full">
-        <thead>
-          <tr className="bg-neutral-800">
-            <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Rank</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Player</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">WPM</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Accuracy</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Tests</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-neutral-800">
-          {leaderboard.length > 0 ? (
-            leaderboard.map((user, index) => (
-              <tr key={user.userId} className="bg-green-400/5 hover:bg-neutral-800/50 transition-colors duration-200">
-                <td className="px-6 py-4 text-yellow-400 font-bold">#{index + 1}</td>
-                <td className="px-6 py-4 text-white">{user.username || "Anonymous"}</td>
-                <td className="px-6 py-4 text-green-400">{user.averageWpm}</td>
-                <td className="px-6 py-4 text-green-400">{user.averageAccuracy}%</td>
-                <td className="px-6 py-4 text-neutral-400">{user.totalSessions}</td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="5" className="text-center py-4 text-neutral-400">
-                No leaderboard data available.
-              </td>
+      <h2 className="text-3xl font-bold text-green-400 text-center my-6">Global Leaderboard</h2>
+
+      {loading ? (
+        <div className="flex justify-center items-center py-10">
+          <ClipLoader color="#22c55e" size={50} />
+        </div>
+      ) : (
+        <table className="w-full">
+          <thead>
+            <tr className="bg-neutral-800">
+              <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Rank</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Player</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">WPM</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Accuracy</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-green-400">Tests</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-neutral-800">
+            {leaderboard.length > 0 ? (
+              leaderboard.map((user, index) => (
+                <tr key={user.userId} className="bg-green-400/5 hover:bg-neutral-800/50 transition-colors duration-200">
+                  <td className="px-6 py-4 text-yellow-400 font-bold">#{index + 1}</td>
+                  <td className="px-6 py-4 text-white">{user.username}</td>
+                  <td className="px-6 py-4 text-green-400">{Math.round(user.averageWpm)}</td>
+                  <td className="px-6 py-4 text-green-400">{Math.round(user.averageAccuracy)}%</td>
+                  <td className="px-6 py-4 text-neutral-400">{user.totalSessions}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" className="text-center py-4 text-neutral-400">
+                  No leaderboard data available.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      )}
     </div>
     </div>
   </section>
