@@ -1,167 +1,210 @@
 "use client"
 
-import React, { useEffect, useState } from 'react'
-import CreateRoomForm from '../../components/createRoomModal'
-import { useUser } from '@clerk/clerk-react'
+import React, { useEffect, useState } from "react"
+import CreateRoomForm from "../../components/createRoomModal"
+import JoinRoomModal from "../../components/joinRoomModal"
+import { useUser } from "@clerk/clerk-react"
 
 function Multiplayer() {
-
-  const { user, isLoaded } = useUser()  
+  const { user, isLoaded } = useUser()
   const [showCreateRoomForm, setShowCreateRoomForm] = useState(false)
-  const [createdRoom, setCreatedRoom] = useState(null) 
+  const [showJoinRoomModal, setShowJoinRoomModal] = useState(false)
+  const [createdRoom, setCreatedRoom] = useState(null)
   const [activeRooms, setActiveRooms] = useState([])
-  const [loading, setLoading] = useState(false) 
+  const [joinedRooms, setJoinedRooms] = useState([])
+  const [loadingRooms, setLoadingRooms] = useState(false)
 
-  // Function to toggle form visibility
+  // Hardcoded recent winners
+  const recentWinners = [
+    { id: 1, name: "Alice", wpm: 120, accuracy: "98%" },
+    { id: 2, name: "Bob", wpm: 110, accuracy: "95%" },
+    { id: 3, name: "Charlie", wpm: 115, accuracy: "97%" },
+    { id: 4, name: "David", wpm: 105, accuracy: "94%" },
+  ]
+
+  // Toggle Create Room Modal
   const handleCreateRoomClick = () => {
     setShowCreateRoomForm(!showCreateRoomForm)
-    setCreatedRoom(null) // Reset room creation on toggling form
+    setCreatedRoom(null)
   }
 
-  // Callback function to handle room creation success
-  const handleRoomCreated = (roomName) => {
-    setCreatedRoom(roomName)
+  // Toggle Join Room Modal
+  const handleJoinRoomClick = () => {
+    setShowJoinRoomModal(!showJoinRoomModal)
   }
 
-  // Fetch active rooms when the component mounts and user is loaded
+  // Close Join Room Modal
+  const closeJoinRoomModal = () => {
+    setShowJoinRoomModal(false)
+  }
+
+  // Fetch active and joined rooms
   useEffect(() => {
     if (isLoaded && user) {
-      const fetchActiveRooms = async () => {
-        setLoading(true);
+      const fetchRooms = async () => {
+        setLoadingRooms(true)
         try {
-          const response = await fetch('/api/room', {
-            method: 'GET',
+          const response = await fetch("http://localhost:3000/api/room", {
+            method: "GET",
             headers: {
-              'x-user-id': user.id // Use the user ID from the useUser hook
-            }
-          });
-          const data = await response.json();
-
+              "x-user-id": user.id,
+            },
+          })
+          const data = await response.json()
+  
           if (response.ok) {
-            setActiveRooms(data.rooms); // Assuming `data.rooms` contains an array of the user's rooms
+            const allRooms = data.rooms || []
+  
+            // Filter rooms where the current user is in the players array
+            const userJoinedRooms = allRooms.filter((room) =>
+              room.players.includes(user.id)
+            )
+  
+            setActiveRooms(allRooms)
+            setJoinedRooms(userJoinedRooms)
           } else {
-            setActiveRooms([]); // No rooms found for the user
+            setActiveRooms([])
+            setJoinedRooms([])
           }
         } catch (error) {
-          console.error('Error fetching active rooms:', error);
+          console.error("Error fetching rooms:", error)
         } finally {
-          setLoading(false);
+          setLoadingRooms(false)
         }
-      };
-
-      fetchActiveRooms();
+      }
+  
+      fetchRooms()
     }
-  }, [isLoaded, user]); // Re-run this effect when `user` is available and loaded
+  }, [isLoaded, user])
+  
 
   return (
     <section>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12 animate__animated animate__fadeIn">
-          <h2 className="text-3xl md:text-4xl font-bold text-green-400 mb-4">Multiplayer Arena</h2>
-          <p className="text-neutral-400">Race against friends or join random matches</p>
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-green-400 mb-4">
+            Multiplayer Arena
+          </h2>
+          <p className="text-neutral-400">
+            Race against friends or join random matches
+          </p>
         </div>
 
+        {/* Multiplayer Options */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700 hover:border-green-400 transition-duration-200 cursor-pointer animate__animated animate__fadeInUp">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-white">Quick Race</h3>
-              <span className="bg-green-400/20 text-green-400 px-3 py-1 rounded-full text-sm">15 Online</span>
-            </div>
-            <p className="text-neutral-400 mb-4">Join a random match instantly with players of similar skill level</p>
-            <button className="w-full py-3 bg-green-500 text-neutral-900 rounded-lg font-medium hover:bg-green-400 transition-colors duration-200">
+          {/* Quick Race - Opens Join Room Modal */}
+          <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700 hover:border-green-400 transition duration-200 cursor-pointer">
+            <h3 className="text-xl font-semibold text-white mb-2">Quick Race</h3>
+            <p className="text-neutral-400 mb-4">
+              Join a random match instantly with players of similar skill level
+            </p>
+            <button
+              onClick={handleJoinRoomClick}
+              className="w-full py-3 bg-green-500 text-neutral-900 rounded-lg font-medium hover:bg-green-400 transition-colors duration-200"
+            >
               Join Match
             </button>
           </div>
 
-          <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700 hover:border-green-400 transition-duration-200 cursor-pointer animate__animated animate__fadeInUp animate__delay-1s">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-white">Create Private Room</h3>
-              <span className="bg-green-400/20 text-green-400 px-3 py-1 rounded-full text-sm">Custom</span>
-            </div>
-            <p className="text-neutral-400 mb-4">Create a private room and invite your friends to compete</p>
+          {/* Create Private Room */}
+          <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700 hover:border-green-400 transition duration-200 cursor-pointer">
+            <h3 className="text-xl font-semibold text-white mb-2">
+              Create Private Room
+            </h3>
+            <p className="text-neutral-400 mb-4">
+              Create a private room and invite your friends to compete
+            </p>
             <button
-              onClick={handleCreateRoomClick}  // Toggle form visibility
+              onClick={handleCreateRoomClick}
               className="w-full py-3 bg-green-500 text-neutral-900 rounded-lg font-medium hover:bg-green-400 transition-colors duration-200"
             >
-              {showCreateRoomForm ? 'Cancel' : 'Create Room'}
+              {showCreateRoomForm ? "Cancel" : "Create Room"}
             </button>
-
-            {/* Conditionally render CreateRoomForm based on state and pass onRoomCreated */}
-            {showCreateRoomForm && <CreateRoomForm onRoomCreated={handleRoomCreated} />}
           </div>
 
-          <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700 hover:border-green-400 transition-duration-200 cursor-pointer animate__animated animate__fadeInUp animate__delay-2s">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold text-white">Tournament</h3>
-              <span className="bg-yellow-400/20 text-yellow-400 px-3 py-1 rounded-full text-sm">Premium</span>
-            </div>
-            <p className="text-neutral-400 mb-4">Join competitive tournaments with prizes and rankings</p>
+          {/* Tournament Section */}
+          <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700 hover:border-green-400 transition duration-200 cursor-pointer">
+            <h3 className="text-xl font-semibold text-white mb-2">Tournament</h3>
+            <p className="text-neutral-400 mb-4">
+              Join competitive tournaments with prizes and rankings
+            </p>
             <button className="w-full py-3 bg-neutral-700 text-green-400 rounded-lg font-medium hover:bg-neutral-600 transition-colors duration-200">
               View Tournaments
             </button>
           </div>
         </div>
 
-        {/* Show success message in active matches if a room is created */}
-        <div className="bg-neutral-800 rounded-xl p-6 animate__animated animate__fadeInUp animate__delay-3s">
-  <h3 className="text-xl font-semibold text-white mb-6">Joined Rooms</h3>
-  {loading ? (
-    <p className="text-neutral-400">Loading active rooms...</p>
-  ) : (
-    activeRooms.length > 0 ? (
-      activeRooms.map((room, index) => (
-        <div key={index} className="bg-neutral-900 p-4 rounded-lg mt-6 border-2 border-neutral-700 hover:border-green-400 transition-all duration-300 transform hover:scale-105 flex items-center justify-between">
-          {/* Room name and player count */}
-          <div className="flex items-center">
-            <p className="text-lg font-semibold text-white mr-4">{room.roomName}</p>
-            <span className="bg-green-400/30 text-green-400 px-3 py-1 rounded-full text-sm">
-              {room.players.length} / {room.maxPlayers} Players
-            </span>
-          </div>
+        {/* Joined Rooms Section */}
 
-          {/* Join Room Button */}
-          <div>
-            <button className="bg-green-500 text-neutral-900 px-4 py-2 rounded-lg font-medium hover:bg-green-400 transition-colors duration-200">
-              Join Room
-            </button>
-          </div>
+      <div className="mb-12">
+        <h3 className="text-2xl font-semibold text-white mb-4">Joined Rooms</h3>
+        {loadingRooms ? (
+          <p className="text-neutral-400">Loading joined rooms...</p>
+        ) : joinedRooms.length > 0 ? (
+          <ul className="space-y-3">
+            {joinedRooms.map((room) => (
+              <li
+                key={room.roomId}
+                className="bg-neutral-800 p-4 rounded-lg border border-neutral-700 text-white flex justify-between"
+              >
+                <span>{room.roomName}</span>
+                <span className="text-neutral-400">Max: {room.maxPlayers}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-neutral-400">You haven't joined any rooms yet.</p>
+        )}
+      </div>
+
+
+        {/* Recent Winners Section */}
+        <div className="mb-12">
+          <h3 className="text-2xl font-semibold text-white mb-4">Recent Winners</h3>
+          <ul className="space-y-3">
+            {recentWinners.map((winner) => (
+              <li
+                key={winner.id}
+                className="bg-neutral-800 p-4 rounded-lg border border-neutral-700 flex justify-between"
+              >
+                <span className="text-white font-medium">{winner.name}</span>
+                <span className="text-green-400">{winner.wpm} WPM ({winner.accuracy})</span>
+              </li>
+            ))}
+          </ul>
         </div>
-      ))
-    ) : (
-      <p className="text-neutral-400">No joined rooms found</p>
-    )
-  )}
-</div>
 
-
-
-        {/* Show recent winners */}
-        <div className="mt-12 bg-neutral-800 rounded-xl p-6 animate__animated animate__fadeInUp animate__delay-4s">
-          <h3 className="text-xl font-semibold text-white mb-6">Recent Winners</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-neutral-900 rounded-lg p-4 flex items-center space-x-4">
-              <div className="w-12 h-12 bg-green-400 rounded-full flex items-center justify-center text-neutral-900 font-bold">1</div>
-              <div>
-                <div className="text-white font-semibold">SpeedDemon</div>
-                <div className="text-green-400">145 WPM</div>
-              </div>
-            </div>
-            <div className="bg-neutral-900 rounded-lg p-4 flex items-center space-x-4">
-              <div className="w-12 h-12 bg-neutral-700 rounded-full flex items-center justify-center text-white font-bold">2</div>
-              <div>
-                <div className="text-white font-semibold">TypeMaster</div>
-                <div className="text-green-400">138 WPM</div>
-              </div>
-            </div>
-            <div className="bg-neutral-900 rounded-lg p-4 flex items-center space-x-4">
-              <div className="w-12 h-12 bg-neutral-700 rounded-full flex items-center justify-center text-white font-bold">3</div>
-              <div>
-                <div className="text-white font-semibold">SwiftKeys</div>
-                <div className="text-green-400">132 WPM</div>
-              </div>
+        {/* Create Room Modal */}
+        {showCreateRoomForm && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-neutral-900 p-6 rounded-lg shadow-lg w-96 relative">
+              <button
+                onClick={handleCreateRoomClick}
+                className="absolute top-2 right-2 text-white text-xl hover:text-gray-400"
+              >
+                &times;
+              </button>
+              <CreateRoomForm onRoomCreated={(roomName) => setCreatedRoom(roomName)} />
             </div>
           </div>
-        </div>
+        )}
+
+
+        {/* Join Room Modal */}
+        {showJoinRoomModal && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-neutral-900 p-6 rounded-lg shadow-lg w-96 relative">
+              <button
+                onClick={closeJoinRoomModal}
+                className="absolute top-2 right-2 text-white text-xl hover:text-gray-400"
+              >
+                &times;
+              </button>
+              <JoinRoomModal onClose={closeJoinRoomModal} />
+            </div>
+          </div>
+        )}
+
       </div>
     </section>
   )
