@@ -10,9 +10,8 @@ export async function POST(req) {
 
     const userId = req.headers.get("x-user-id"); // Get userId from headers
     const { roomId, password } = await req.json(); // Get roomId and password from request body
-
-    if (!userId || !roomId || !password) {
-      return NextResponse.json({ error: "Room ID, and Password are required" }, { status: 400 });
+    if (!userId || !roomId) {
+      return NextResponse.json({ error: "User ID and Room ID are required" }, { status: 400 });
     }
 
     // Find the room by roomId
@@ -21,14 +20,19 @@ export async function POST(req) {
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
     }
 
-    // Check if the provided password matches the room's password
-    if (room.password !== password) {
+    // Check if the room is private and requires password
+    if (room.password && !password) {
+      return NextResponse.json({ error: "Password is required for this private room" }, { status: 400 });
+    }
+
+    // If room has password, verify it
+    if (room.password && room.password !== password) {
       return NextResponse.json({ error: "Incorrect password" }, { status: 400 });
     }
 
     if (room.players.includes(userId)) {
-        return NextResponse.json({ error: "You are already in this room" }, { status: 400 });
-      }
+      return NextResponse.json({ error: "You are already in this room" }, { status: 400 });
+    }
 
     // Check if the room has space for more players
     if (room.players.length >= room.maxPlayers) {

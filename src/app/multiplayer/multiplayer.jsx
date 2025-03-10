@@ -13,6 +13,10 @@ function Multiplayer() {
   const [activeRooms, setActiveRooms] = useState([])
   const [joinedRooms, setJoinedRooms] = useState([])
   const [loadingRooms, setLoadingRooms] = useState(false)
+  const [selectedRoom, setSelectedRoom] = useState(null)
+  const [roomDetails, setRoomDetails] = useState(null)
+  const [loadingDetails, setLoadingDetails] = useState(false)
+  const [showRoomDetails, setShowRoomDetails] = useState(false)
 
   // Hardcoded recent winners
   const recentWinners = [
@@ -92,6 +96,67 @@ function Multiplayer() {
   }, [isLoaded, user])
   
 
+  // Handle room click and fetch details
+  const handleRoomClick = async (room) => {
+    setSelectedRoom(room)
+    setLoadingDetails(true)
+    setShowRoomDetails(true)
+
+    try {
+      // Fetch room details
+      const roomResponse = await fetch(`http://localhost:3000/api/room/${room.roomId}`, {
+        method: "GET",
+        headers: {
+          "x-user-id": user.id,
+        },
+      })
+
+      if (!roomResponse.ok) {
+        throw new Error(`Failed to fetch room: ${roomResponse.statusText}`)
+      }
+
+      const responseData = await roomResponse.json()
+      const roomData = responseData.room // Extract the room object from the response
+      console.log("Received room data:", roomData) // Debug log
+
+      // Check if roomData exists
+      if (!roomData) {
+        throw new Error("No room data received")
+      }
+
+      // Fetch user details for each player in the room
+      const playersWithDetails = await Promise.all(
+        roomData.players.map(async (playerId) => {
+          try {
+            const userResponse = await fetch(`http://localhost:3000/api/users/${playerId}`)
+            if (!userResponse.ok) {
+              console.error(`Failed to fetch user ${playerId}:`, userResponse.statusText)
+              return null
+            }
+            const userData = await userResponse.json()
+            return userData.user || null
+          } catch (error) {
+            console.error(`Error fetching user details for ${playerId}:`, error)
+            return null
+          }
+        })
+      )
+
+      // Filter out any null values from failed user fetches
+      const validPlayers = playersWithDetails.filter(player => player !== null)
+
+      setRoomDetails({
+        ...roomData,
+        playersWithDetails: validPlayers,
+      })
+    } catch (error) {
+      console.error("Error fetching room details:", error)
+      setRoomDetails(null)
+    } finally {
+      setLoadingDetails(false)
+    }
+  }
+
   return (
     <section>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -159,7 +224,8 @@ function Multiplayer() {
               {joinedRooms.map((room) => (
                 <li
                   key={room.roomId}
-                  className="bg-neutral-800 p-4 rounded-lg border border-neutral-700 text-white flex justify-between"
+                  className="bg-neutral-800 p-4 rounded-lg border border-neutral-700 text-white flex justify-between cursor-pointer hover:border-green-400 transition-colors duration-200"
+                  onClick={() => handleRoomClick(room)}
                 >
                   <span>{room.roomName}</span>
                   <span className="text-neutral-400">Max: {room.maxPlayers}</span>
@@ -170,6 +236,61 @@ function Multiplayer() {
             <p className="text-neutral-400">You haven't joined any rooms yet.</p>
           )}
         </div>
+
+        {/* Room Details Modal */}
+        {showRoomDetails && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-neutral-900 p-6 rounded-lg shadow-lg w-[600px] relative">
+              <button
+                onClick={() => setShowRoomDetails(false)}
+                className="absolute top-2 right-2 text-white text-xl hover:text-gray-400"
+              >
+                &times;
+              </button>
+              
+              {loadingDetails ? (
+                <p className="text-neutral-400">Loading room details...</p>
+              ) : roomDetails ? (
+                <div>
+                  <h3 className="text-2xl font-semibold text-white mb-4">{roomDetails.roomName}</h3>
+                  <div className="space-y-4">
+                    <div className="bg-neutral-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-medium text-white mb-2">Room Information</h4>
+                      <p className="text-neutral-400">Current Players: {roomDetails.currentPlayers}</p>
+                      <p className="text-neutral-400">Max Players: {roomDetails.maxPlayers}</p>
+                    </div>
+                    
+                    <div className="bg-neutral-800 p-4 rounded-lg">
+                      <h4 className="text-lg font-medium text-white mb-2">Players</h4>
+                      {roomDetails.playersWithDetails.length > 0 ? (
+                        <ul className="space-y-2">
+                          {roomDetails.playersWithDetails.map((player, index) => (
+                            <li key={index} className="flex items-center space-x-3">
+                              {player.imageUrl && (
+                                <img
+                                  src={player.imageUrl}
+                                  alt={player.username}
+                                  className="w-8 h-8 rounded-full"
+                                />
+                              )}
+                              <span className="text-white">
+                                {player.firstName} {player.lastName}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-neutral-400">No players in this room</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-neutral-400">Failed to load room details</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Recent Winners Section */}
         <div className="mb-12">
