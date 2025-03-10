@@ -24,9 +24,10 @@ function Multiplayer() {
 
   // Toggle Create Room Modal
   const handleCreateRoomClick = () => {
-    setShowCreateRoomForm(!showCreateRoomForm)
-    setCreatedRoom(null)
-  }
+    setShowCreateRoomForm(!showCreateRoomForm);
+    setCreatedRoom(null); // Reset when opening modal
+  };
+  
 
   // Toggle Join Room Modal
   const handleJoinRoomClick = () => {
@@ -36,6 +37,19 @@ function Multiplayer() {
   // Close Join Room Modal
   const closeJoinRoomModal = () => {
     setShowJoinRoomModal(false)
+  }
+
+  // Copy Room ID to Clipboard
+  const copyRoomId = async () => {
+    if (createdRoom) {
+      try {
+        await navigator.clipboard.writeText(createdRoom);
+        alert("Room ID copied to clipboard!");
+      } catch (err) {
+        console.error("Failed to copy room ID:", err);
+        alert("Failed to copy room ID. Please try again.");
+      }
+    }
   }
 
   // Fetch active and joined rooms
@@ -92,7 +106,7 @@ function Multiplayer() {
 
         {/* Multiplayer Options */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
-          {/* Quick Race - Opens Join Room Modal */}
+          {/* Quick Race */}
           <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700 hover:border-green-400 transition duration-200 cursor-pointer">
             <h3 className="text-xl font-semibold text-white mb-2">Quick Race</h3>
             <p className="text-neutral-400 mb-4">
@@ -121,42 +135,41 @@ function Multiplayer() {
               {showCreateRoomForm ? "Cancel" : "Create Room"}
             </button>
           </div>
-
-          {/* Tournament Section */}
           <div className="bg-neutral-800 rounded-xl p-6 border border-neutral-700 hover:border-green-400 transition duration-200 cursor-pointer">
-            <h3 className="text-xl font-semibold text-white mb-2">Tournament</h3>
+            <h3 className="text-xl font-semibold text-white mb-2">Join Tournament</h3>
             <p className="text-neutral-400 mb-4">
-              Join competitive tournaments with prizes and rankings
+              Compete in an official tournament against top players
             </p>
-            <button className="w-full py-3 bg-neutral-700 text-green-400 rounded-lg font-medium hover:bg-neutral-600 transition-colors duration-200">
-              View Tournaments
+            <button
+              onClick={() => alert("Tournament feature coming soon!")}
+              className="w-full py-3 bg-green-500 text-neutral-900 rounded-lg font-medium hover:bg-green-400 transition-colors duration-200"
+            >
+              Join Tournament
             </button>
           </div>
         </div>
 
         {/* Joined Rooms Section */}
-
-      <div className="mb-12">
-        <h3 className="text-2xl font-semibold text-white mb-4">Joined Rooms</h3>
-        {loadingRooms ? (
-          <p className="text-neutral-400">Loading joined rooms...</p>
-        ) : joinedRooms.length > 0 ? (
-          <ul className="space-y-3">
-            {joinedRooms.map((room) => (
-              <li
-                key={room.roomId}
-                className="bg-neutral-800 p-4 rounded-lg border border-neutral-700 text-white flex justify-between"
-              >
-                <span>{room.roomName}</span>
-                <span className="text-neutral-400">Max: {room.maxPlayers}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-neutral-400">You haven't joined any rooms yet.</p>
-        )}
-      </div>
-
+        <div className="mb-12">
+          <h3 className="text-2xl font-semibold text-white mb-4">Joined Rooms</h3>
+          {loadingRooms ? (
+            <p className="text-neutral-400">Loading joined rooms...</p>
+          ) : joinedRooms.length > 0 ? (
+            <ul className="space-y-3">
+              {joinedRooms.map((room) => (
+                <li
+                  key={room.roomId}
+                  className="bg-neutral-800 p-4 rounded-lg border border-neutral-700 text-white flex justify-between"
+                >
+                  <span>{room.roomName}</span>
+                  <span className="text-neutral-400">Max: {room.maxPlayers}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-neutral-400">You haven't joined any rooms yet.</p>
+          )}
+        </div>
 
         {/* Recent Winners Section */}
         <div className="mb-12">
@@ -184,11 +197,23 @@ function Multiplayer() {
               >
                 &times;
               </button>
-              <CreateRoomForm onRoomCreated={(roomName) => setCreatedRoom(roomName)} />
+              <CreateRoomForm onRoomCreated={(roomId) => setCreatedRoom(roomId)} />
+
+              {/* Display Room ID */}
+              {createdRoom && (
+                <div className="mt-4 p-3 bg-neutral-800 rounded-lg text-center border border-neutral-700">
+                  <p className="text-white text-lg">Room ID: <span className="text-green-400 font-bold">{createdRoom}</span></p>
+                  <button
+                    onClick={copyRoomId}
+                    className="mt-2 px-4 py-2 bg-green-500 text-neutral-900 rounded-lg font-medium hover:bg-green-400 transition-colors duration-200"
+                  >
+                    Copy Room ID
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
-
 
         {/* Join Room Modal */}
         {showJoinRoomModal && (
@@ -204,6 +229,7 @@ function Multiplayer() {
             </div>
           </div>
         )}
+
 
       </div>
     </section>

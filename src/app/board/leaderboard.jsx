@@ -18,8 +18,17 @@ function Leaderboard() {
         const res = await fetch("/api/leaderboard");
         const data = await res.json();
 
-        // Sorting players by totalSessions (tests taken) in descending order
-        const sortedData = data.sort((a, b) => b.totalSessions - a.totalSessions);
+        // Sorting players by WPM, then Accuracy, then Total Sessions
+        const sortedData = data.sort((a, b) => {
+          if (b.averageWpm !== a.averageWpm) {
+            return b.averageWpm - a.averageWpm;
+          } else if (b.averageAccuracy !== a.averageAccuracy) {
+            return b.averageAccuracy - a.averageAccuracy;
+          } else {
+            return b.totalSessions - a.totalSessions;
+          }
+        });
+
         setLeaderboard(sortedData);
       } catch (error) {
         console.error("Error fetching leaderboard:", error);
