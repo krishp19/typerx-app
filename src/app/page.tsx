@@ -15,7 +15,7 @@ export default function Home() {
       <div className="grid lg:grid-cols-2 gap-12 items-center">
         <div className="text-center lg:text-left animate__animated animate__fadeInLeft">
         <h1 className="text-4xl md:text-5xl font-serif text-green-400 mb-6 cursor typewriter-animation">
-          Master Your <span className="mb-4 text-neutral-400 animate-pulse">Typing Skills</span>    
+          Master Your <span className="mb-4 text-neutral-400 animate-pulse font-serif">Typing Skills</span>    
         </h1>
           <p className="text-neutral-400 text-lg md:text-xl mb-8">
             Challenge yourself, compete with others, and become a typing champion. Track your progress and climb the global leaderboard.

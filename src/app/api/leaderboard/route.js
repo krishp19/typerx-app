@@ -31,8 +31,7 @@ export async function GET() {
       return {
         userId: user.userId,
         username: clerkUser 
-          ? clerkUser.username || `${clerkUser.first_name || ""} ${clerkUser.last_name || ""}`.trim() || "Guest"
-          : "Anonymous",
+          ? clerkUser.username || `${clerkUser.first_name || ""} ${clerkUser.last_name || ""}`.trim() : "Guest",
         averageWpm: user.averageWpm,
         averageAccuracy: user.averageAccuracy,
         totalSessions: user.totalSessions

@@ -12,7 +12,7 @@ export async function POST(req) {
     const { roomId, password } = await req.json(); // Get roomId and password from request body
 
     if (!userId || !roomId || !password) {
-      return NextResponse.json({ error: "User ID, Room ID, and Password are required" }, { status: 400 });
+      return NextResponse.json({ error: "Room ID, and Password are required" }, { status: 400 });
     }
 
     // Find the room by roomId
