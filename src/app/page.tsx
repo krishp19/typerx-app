@@ -1,9 +1,7 @@
-import Image from "next/image";
+
 import Link from "next/link";
 
-const Metadata = {
-  
-}
+
 
 export default function Home() {
   return (

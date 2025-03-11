@@ -12,23 +12,32 @@ const roomSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  maxPlayers: {
+    type: Number,
+    required: true,
+  },
   creatorId: {
     type: String,
     required: true,
   },
-  players: {
-    type: [String], // Array to store player IDs
-    default: [],
+  players: [{
+    type: String,
+  }],
+  currentPlayers: {
+    type: Number,
+    default: 1,
   },
-  password: {
-    type: String, // Password field for the room
-    required: false, // Not mandatory, only if password protection is enabled
+  isActive: {
+    type: Boolean,
+    default: true,
   },
-  maxPlayers: {
-    type: Number, // Max players allowed in the room
-    default: 2, // Default value is 2, you can change it
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 });
 
+// Check if the model is already defined to prevent OverwriteModelError
 const Room = mongoose.models.Room || mongoose.model("Room", roomSchema);
+
 export default Room;

@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import connectDB from "../../../../helper/db.js";
-import Room from "../../../../models/room.js";
+import connectDB from "../../../../helper/db";
+import Room from "../../../../models/room";
 
-export async function GET(req, { params }) {
+export async function GET(req) {
   try {
     await connectDB(); // Ensure DB connection
 
-    const { roomId } = params; // Get roomId from URL parameters
+    const roomId = req.nextUrl.pathname.split('/').pop();
     if (!roomId) {
       return NextResponse.json({ error: "Room ID is required" }, { status: 400 });
     }
 
-    // Find the room by roomId
+    // Find the room by ID
     const room = await Room.findOne({ roomId });
     if (!room) {
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
@@ -32,16 +32,19 @@ export async function GET(req, { params }) {
     return NextResponse.json({ room: roomInfo }, { status: 200 });
   } catch (error) {
     console.error("Error fetching room:", error);
-    return NextResponse.json({ error: "Failed to fetch room information" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch room details" },
+      { status: 500 }
+    );
   }
 }
 
 // Optional: Add DELETE endpoint to remove a room
-export async function DELETE(req, { params }) {
+export async function DELETE(req) {
   try {
     await connectDB();
 
-    const { roomId } = params;
+    const roomId = req.nextUrl.pathname.split('/').pop();
     const userId = req.headers.get("x-user-id");
 
     if (!roomId || !userId) {

@@ -1,41 +1,39 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs";
 
 export async function GET(req, { params }) {
   try {
-    const { userId } = params;
+    // Extract userId from route params
+    const requestedUserId = params.userId;
 
-    if (!userId) {
+    if (!requestedUserId) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
 
-    // Fetch user details from Clerk API
-    const response = await fetch(`https://api.clerk.dev/v1/users/${userId}`, {
+    // Fetch user from Clerk API
+    const response = await fetch(`https://api.clerk.com/v1/users/${requestedUserId}`, {
       headers: {
-        Authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`,
+        'Authorization': `Bearer ${process.env.CLERK_SECRET_KEY}`,
         'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Clerk API error: ${response.statusText}`);
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const user = await response.json();
 
-    // Return relevant user information
-    const userInfo = {
-      id: user.id,
-      username: user.username,
-      firstName: user.first_name,
-      lastName: user.last_name,
-      imageUrl: user.image_url,
-      lastActiveAt: user.last_active_at,
-      createdAt: user.created_at,
-      emailAddresses: user.email_addresses,
-    };
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        fullName: `${user.first_name} ${user.last_name}`,
+        imageUrl: user.image_url,
+        email: user.email_addresses?.[0]?.email_address
+      }
+    });
 
-    return NextResponse.json({ user: userInfo }, { status: 200 });
   } catch (error) {
     console.error("Error fetching user details:", error);
     return NextResponse.json(
@@ -43,4 +41,4 @@ export async function GET(req, { params }) {
       { status: 500 }
     );
   }
-} 
+}

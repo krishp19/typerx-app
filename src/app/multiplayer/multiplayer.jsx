@@ -3,9 +3,14 @@
 import React, { useEffect, useState } from "react"
 import CreateRoomForm from "../../components/createRoomModal"
 import JoinRoomModal from "../../components/joinRoomModal"
+import UserDetails from "../../components/UserDetails"
 import { useUser } from "@clerk/clerk-react"
+import { useSocket } from "../../hooks/useSocket"
+import { useRouter } from "next/navigation"
 
 function Multiplayer() {
+  const router = useRouter()
+  const socket = useSocket()
   const { user, isLoaded } = useUser()
   const [showCreateRoomForm, setShowCreateRoomForm] = useState(false)
   const [showJoinRoomModal, setShowJoinRoomModal] = useState(false)
@@ -17,6 +22,8 @@ function Multiplayer() {
   const [roomDetails, setRoomDetails] = useState(null)
   const [loadingDetails, setLoadingDetails] = useState(false)
   const [showRoomDetails, setShowRoomDetails] = useState(false)
+  const [roomPlayers, setRoomPlayers] = useState([])
+  const [isCreator, setIsCreator] = useState(false)
 
   // Hardcoded recent winners
   const recentWinners = [
@@ -98,9 +105,11 @@ function Multiplayer() {
 
   // Handle room click and fetch details
   const handleRoomClick = async (room) => {
-    setSelectedRoom(room)
-    setLoadingDetails(true)
-    setShowRoomDetails(true)
+    if (!isLoaded || !user) return;
+
+    setSelectedRoom(room);
+    setLoadingDetails(true);
+    setShowRoomDetails(true);
 
     try {
       // Fetch room details
@@ -109,53 +118,231 @@ function Multiplayer() {
         headers: {
           "x-user-id": user.id,
         },
-      })
+      });
 
       if (!roomResponse.ok) {
-        throw new Error(`Failed to fetch room: ${roomResponse.statusText}`)
+        throw new Error(`Failed to fetch room: ${roomResponse.statusText}`);
       }
 
-      const responseData = await roomResponse.json()
-      const roomData = responseData.room // Extract the room object from the response
-      console.log("Received room data:", roomData) // Debug log
+      const responseData = await roomResponse.json();
+      const roomData = responseData.room;
+      console.log("Received room data:", roomData);
 
-      // Check if roomData exists
       if (!roomData) {
-        throw new Error("No room data received")
+        throw new Error("No room data received");
       }
 
       // Fetch user details for each player in the room
       const playersWithDetails = await Promise.all(
         roomData.players.map(async (playerId) => {
           try {
-            const userResponse = await fetch(`http://localhost:3000/api/users/${playerId}`)
+            const userResponse = await fetch(`http://localhost:3000/api/users/${playerId}`);
             if (!userResponse.ok) {
-              console.error(`Failed to fetch user ${playerId}:`, userResponse.statusText)
-              return null
+              console.error(`Failed to fetch user ${playerId}:`, userResponse.statusText);
+              return null;
             }
-            const userData = await userResponse.json()
-            return userData.user || null
+            const userData = await userResponse.json();
+            return userData.user || null;
           } catch (error) {
-            console.error(`Error fetching user details for ${playerId}:`, error)
-            return null
+            console.error(`Error fetching user details for ${playerId}:`, error);
+            return null;
           }
         })
-      )
+      );
 
       // Filter out any null values from failed user fetches
-      const validPlayers = playersWithDetails.filter(player => player !== null)
+      const validPlayers = playersWithDetails.filter(player => player !== null);
 
       setRoomDetails({
         ...roomData,
         playersWithDetails: validPlayers,
-      })
+      });
     } catch (error) {
-      console.error("Error fetching room details:", error)
-      setRoomDetails(null)
+      console.error("Error fetching room details:", error);
+      setRoomDetails(null);
     } finally {
-      setLoadingDetails(false)
+      setLoadingDetails(false);
     }
-  }
+  };
+
+  // Handle socket events
+  useEffect(() => {
+    if (!socket || !isLoaded || !user) return;
+
+    socket.on("players-update", async ({ players, roomId }) => {
+      // Update room details when players change
+      try {
+        const roomResponse = await fetch(`http://localhost:3000/api/room/${roomId}`, {
+          method: "GET",
+          headers: {
+            "x-user-id": user.id,
+          },
+        });
+
+        if (!roomResponse.ok) {
+          throw new Error(`Failed to fetch room: ${roomResponse.statusText}`);
+        }
+
+        const responseData = await roomResponse.json();
+        const roomData = responseData.room;
+
+        if (!roomData) {
+          throw new Error("No room data received");
+        }
+
+        // Fetch user details for each player in the room
+        const playersWithDetails = await Promise.all(
+          roomData.players.map(async (playerId) => {
+            try {
+              const userResponse = await fetch(`http://localhost:3000/api/users/${playerId}`);
+              if (!userResponse.ok) {
+                console.error(`Failed to fetch user ${playerId}:`, userResponse.statusText);
+                return null;
+              }
+              const userData = await userResponse.json();
+              return userData.user || null;
+            } catch (error) {
+              console.error(`Error fetching user details for ${playerId}:`, error);
+              return null;
+            }
+          })
+        );
+
+        // Filter out any null values from failed user fetches
+        const validPlayers = playersWithDetails.filter(player => player !== null);
+
+        setRoomDetails({
+          ...roomData,
+          playersWithDetails: validPlayers,
+        });
+      } catch (error) {
+        console.error("Error updating room details:", error);
+      }
+    });
+
+    socket.on("game-starting", () => {
+      console.log("Game is starting!");
+    });
+
+    socket.on("countdown", (count) => {
+      console.log(`Starting in ${count}...`);
+    });
+
+    socket.on("game-started", () => {
+      router.push(`/compete?mode=multiplayer&roomId=${selectedRoom.roomId}`);
+    });
+
+    return () => {
+      socket.off("players-update");
+      socket.off("game-starting");
+      socket.off("countdown");
+      socket.off("game-started");
+    };
+  }, [socket, selectedRoom, router, isLoaded, user]);
+
+  // Join room with user details
+  const handleJoinRoom = (room) => {
+    if (!socket || !isLoaded || !user) return;
+
+    socket.emit("join-room", {
+      roomId: room.roomId,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        imageUrl: user.imageUrl,
+        email: user.emailAddresses?.[0]?.emailAddress
+      },
+    });
+    setIsCreator(room.creatorId === user.id);
+  };
+
+  // Start the game (only for room creator)
+  const handleStartGame = () => {
+    if (socket && selectedRoom) {
+      socket.emit("start-game", selectedRoom.roomId);
+    }
+  };
+
+  // Update the Room Details Modal to include the start button and player list
+  const RoomDetailsContent = () => {
+    console.log("Room Details:", roomDetails); // Debug log
+    return (
+      <div>
+        <h3 className="text-2xl font-semibold text-white mb-4">{roomDetails.roomName}</h3>
+        <div className="space-y-4">
+          <div className="bg-neutral-800 p-4 rounded-lg">
+            <h4 className="text-lg font-medium text-white mb-2">Room Information</h4>
+            <p className="text-neutral-400">Current Players: {roomDetails.currentPlayers}</p>
+            <p className="text-neutral-400">Max Players: {roomDetails.maxPlayers}</p>
+            {isCreator && roomDetails.playersWithDetails.length >= 2 && (
+              <button
+                onClick={handleStartGame}
+                className="mt-4 w-full py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+              >
+                Start Game
+              </button>
+            )}
+          </div>
+          
+          <div className="bg-neutral-800 p-4 rounded-lg">
+            <h4 className="text-lg font-medium text-white mb-2">Room Creator</h4>
+            <div className="mb-4">
+              {roomDetails.playersWithDetails.map(player => 
+                player.id === roomDetails.creatorId && (
+                  <div key={player.id} className="flex items-center space-x-4">
+                    <img
+                      src={player.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${player.id}`}
+                      alt={player.fullName || "User"}
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <div>
+                      <h3 className="font-medium text-white">
+                        {player.fullName || `User ${player.id.substring(0, 8)}`}
+                      </h3>
+                      {player.email && (
+                        <p className="text-sm text-neutral-400">{player.email}</p>
+                      )}
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+
+            <h4 className="text-lg font-medium text-white mb-2">Players</h4>
+            {roomDetails.playersWithDetails.length > 0 ? (
+              <ul className="space-y-4">
+                {roomDetails.playersWithDetails.map((player) => (
+                  <li key={player.id} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={player.imageUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${player.id}`}
+                        alt={player.fullName || "User"}
+                        className="w-10 h-10 rounded-full"
+                      />
+                      <div>
+                        <h3 className="font-medium text-white">
+                          {player.fullName || `User ${player.id.substring(0, 8)}`}
+                        </h3>
+                        {player.email && (
+                          <p className="text-sm text-neutral-400">{player.email}</p>
+                        )}
+                      </div>
+                    </div>
+                    {player.id === roomDetails.creatorId && (
+                      <span className="ml-2 text-green-400 text-sm">(Creator)</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-neutral-400">No players have joined yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <section>
@@ -251,40 +438,7 @@ function Multiplayer() {
               {loadingDetails ? (
                 <p className="text-neutral-400">Loading room details...</p>
               ) : roomDetails ? (
-                <div>
-                  <h3 className="text-2xl font-semibold text-white mb-4">{roomDetails.roomName}</h3>
-                  <div className="space-y-4">
-                    <div className="bg-neutral-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-medium text-white mb-2">Room Information</h4>
-                      <p className="text-neutral-400">Current Players: {roomDetails.currentPlayers}</p>
-                      <p className="text-neutral-400">Max Players: {roomDetails.maxPlayers}</p>
-                    </div>
-                    
-                    <div className="bg-neutral-800 p-4 rounded-lg">
-                      <h4 className="text-lg font-medium text-white mb-2">Players</h4>
-                      {roomDetails.playersWithDetails.length > 0 ? (
-                        <ul className="space-y-2">
-                          {roomDetails.playersWithDetails.map((player, index) => (
-                            <li key={index} className="flex items-center space-x-3">
-                              {player.imageUrl && (
-                                <img
-                                  src={player.imageUrl}
-                                  alt={player.username}
-                                  className="w-8 h-8 rounded-full"
-                                />
-                              )}
-                              <span className="text-white">
-                                {player.firstName} {player.lastName}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-neutral-400">No players in this room</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <RoomDetailsContent />
               ) : (
                 <p className="text-neutral-400">Failed to load room details</p>
               )}
@@ -346,7 +500,7 @@ function Multiplayer() {
               >
                 &times;
               </button>
-              <JoinRoomModal onClose={closeJoinRoomModal} />
+              <JoinRoomModal isOpen={showJoinRoomModal} onClose={closeJoinRoomModal} />
             </div>
           </div>
         )}
