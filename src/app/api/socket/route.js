@@ -1,56 +1,110 @@
-import { Server } from "socket.io";
-import { createServer } from "http";
-import { NextResponse } from "next/server";
+import { Server as SocketIOServer } from 'socket.io';
 
-let io;
+const socketServer = {
+  io: null,
+};
 
-if (!global.io) {
-  // Create HTTP server
-  const httpServer = createServer();
+export const runtime = 'nodejs';
 
-  // Create Socket.IO server
-  io = new Server(httpServer, {
-    cors: {
-      origin: "*", // Allow all origins in development
-      methods: ["GET", "POST"],
-      allowedHeaders: ["Content-Type"],
-      credentials: true,
-    },
-    transports: ["websocket", "polling"],
-    allowEIO3: true,
-    path: "/socket.io/", // Use default Socket.IO path
-  });
-
-  // Store io instance globally
-  global.io = io;
-
-  // Start listening on port 3001
-  httpServer.listen(3001, () => {
-    console.log("Socket.IO server running on port 3001");
-  });
-
-  // Socket.IO event handlers
-  io.on("connection", (socket) => {
-    console.log("Client connected:", socket.id);
-
-    socket.on("join-room", ({ roomId, user }) => {
-      socket.join(roomId);
-      io.to(roomId).emit("user-joined", { user, socketId: socket.id });
-    });
-
-    socket.on("typing-progress", ({ roomId, progress }) => {
-      socket.to(roomId).emit("update-progress", { socketId: socket.id, progress });
-    });
-
-    socket.on("disconnect", () => {
-      console.log("Client disconnected:", socket.id);
-    });
-  });
-}
-
-// Export the handler for Next.js
 export async function GET(req) {
-  return new NextResponse("Socket.IO server is running", { 
+  if (!socketServer.io) {
+    console.log('Socket server initializing...');
+    
+    const io = new SocketIOServer({
+      path: '/api/socket',
+      addTrailingSlash: false,
+      transports: ['websocket'],
+      cors: {
+        origin: '*',
+      },
+    });
+
+    io.on('connection', (socket) => {
+      console.log('Client connected:', socket.id);
+
+      socket.on('disconnect', (reason) => {
+        console.log('Client disconnected:', socket.id, 'Reason:', reason);
+      });
+
+      socket.on('join-room', async (data) => {
+        try {
+          const { roomId, user } = data;
+          console.log(`User ${user.firstName} (${socket.id}) attempting to join room ${roomId}`);
+
+          // Leave any previous rooms
+          const rooms = Array.from(socket.rooms);
+          rooms.forEach(room => {
+            if (room !== socket.id) {
+              socket.leave(room);
+            }
+          });
+
+          await socket.join(roomId);
+          console.log(`User ${user.firstName} (${socket.id}) joined room ${roomId}`);
+
+          // Get all sockets in the room
+          const socketsInRoom = await io.in(roomId).allSockets();
+          const playerCount = socketsInRoom.size;
+          console.log(`Room ${roomId} now has ${playerCount} players`);
+
+          // Emit room joined event
+          socket.emit('room-joined', {
+            success: true,
+            message: `Successfully joined room ${roomId}`,
+            playerCount
+          });
+
+        } catch (error) {
+          console.error('Error in join-room event:', error);
+          socket.emit('error', {
+            type: 'join-room-error',
+            message: error.message
+          });
+        }
+      });
+
+      socket.on('start-game', async ({ roomId }) => {
+        try {
+          console.log(`Starting game in room ${roomId}`);
+          io.to(roomId).emit('game-starting');
+          
+          let count = 3;
+          const countdownInterval = setInterval(() => {
+            if (count > 0) {
+              io.to(roomId).emit('countdown', count);
+              count--;
+            } else {
+              clearInterval(countdownInterval);
+              io.to(roomId).emit('game-started');
+            }
+          }, 1000);
+        } catch (error) {
+          console.error('Error starting game:', error);
+        }
+      });
+
+      socket.on('typing-progress', ({ roomId, progress, wpm, accuracy }) => {
+        socket.to(roomId).emit('update-progress', {
+          socketId: socket.id,
+          progress,
+          wpm,
+          accuracy
+        });
+      });
+
+      socket.on('game-completed', ({ roomId, stats }) => {
+        socket.to(roomId).emit('player-completed', {
+          socketId: socket.id,
+          stats
+        });
+      });
+    });
+
+    socketServer.io = io;
+    console.log('Socket server initialized');
+  }
+
+  return new Response('Socket server is running', {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',

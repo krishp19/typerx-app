@@ -37,6 +37,15 @@ export default function JoinRoomModal({ isOpen, onClose }) {
         throw new Error(data.error || "Failed to join room");
       }
 
+      // Check if user is already in the room
+      if (data.alreadyJoined) {
+        // User is already in the room, show a message but still redirect
+        alert(data.message || "You are already in this room");
+        onClose();
+        router.push(`/compete?mode=multiplayer&roomId=${roomId}`);
+        return;
+      }
+
       // Close modal and redirect to compete page
       onClose();
       router.push(`/compete?mode=multiplayer&roomId=${roomId}`);

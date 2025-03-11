@@ -22,8 +22,16 @@ export async function POST(req) {
       return NextResponse.json({ error: "Room not found" }, { status: 404 });
     }
 
+    // Check if user is already in the room
     if (room.players.includes(userId)) {
-      return NextResponse.json({ room }, { status: 200 });
+      return NextResponse.json(
+        { 
+          message: "You are already in this room", 
+          alreadyJoined: true,
+          room 
+        }, 
+        { status: 200 }
+      );
     }
 
     if (room.currentPlayers >= room.maxPlayers) {
@@ -38,7 +46,14 @@ export async function POST(req) {
     room.currentPlayers += 1;
     await room.save();
 
-    return NextResponse.json({ room }, { status: 200 });
+    return NextResponse.json(
+      { 
+        message: "Successfully joined the room", 
+        alreadyJoined: false,
+        room 
+      }, 
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error joining room:", error);
     return NextResponse.json(

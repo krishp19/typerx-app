@@ -1,48 +1,58 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
-import io from 'socket.io-client';
+import { io } from "socket.io-client";
+import { useEffect, useState } from "react";
 
 export function useSocket() {
-  const socketRef = useRef(null);
+  const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    if (!socketRef.current) {
-      socketRef.current = io('http://localhost:3001', {
-        transports: ['websocket', 'polling'],
-        path: '/socket.io/',
-        reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
-        forceNew: true,
-        timeout: 10000,
-      });
+    const socketInstance = io('http://localhost:3001', {
+      transports: ['websocket'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+      autoConnect: true,
+      forceNew: true
+    });
 
-      socketRef.current.on('connect', () => {
-        console.log('Connected to Socket.IO server');
-      });
+    socketInstance.on("connect", () => {
+      console.log("Socket connected successfully:", socketInstance.id);
+    });
 
-      socketRef.current.on('connect_error', (error) => {
-        console.error('Socket connection error:', error.message);
-        // Try to reconnect with polling if websocket fails
-        if (socketRef.current.io.opts.transports[0] === 'websocket') {
-          console.log('Falling back to polling transport');
-          socketRef.current.io.opts.transports = ['polling'];
-        }
-      });
+    socketInstance.on("connect_error", (err) => {
+      console.error("Socket connection error:", err.message);
+    });
 
-      socketRef.current.on("disconnect", (reason) => {
-        console.log("Disconnected from Socket.IO server:", reason);
-      });
-    }
+    socketInstance.on("connect_timeout", () => {
+      console.error("Socket connection timeout");
+    });
+
+    socketInstance.on("reconnect", (attemptNumber) => {
+      console.log("Socket reconnected after", attemptNumber, "attempts");
+    });
+
+    socketInstance.on("reconnect_error", (err) => {
+      console.error("Socket reconnection error:", err.message);
+    });
+
+    socketInstance.on("reconnect_failed", () => {
+      console.error("Socket reconnection failed after max attempts");
+      // Try to create a new connection after all reconnection attempts fail
+      socketInstance.connect();
+    });
+
+    setSocket(socketInstance);
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
+      if (socketInstance) {
+        console.log("Cleaning up socket connection");
+        socketInstance.removeAllListeners();
+        socketInstance.disconnect();
       }
     };
   }, []);
 
-  return socketRef.current;
+  return socket;
 } 

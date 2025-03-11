@@ -2,12 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useUser } from "@clerk/nextjs";
+import { useSocket } from "../hooks/useSocket";
+import { useRouter } from "next/navigation";
 
 export default function RoomDetails({ roomId }) {
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { user } = useUser();
+  const socket = useSocket();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchRoomDetails = async () => {
@@ -31,6 +35,24 @@ export default function RoomDetails({ roomId }) {
       fetchRoomDetails();
     }
   }, [roomId]);
+
+  useEffect(() => {
+    if (!socket || !roomId) return;
+
+    socket.on("game-starting", () => {
+      router.push(`/compete?mode=multiplayer&roomId=${roomId}`);
+    });
+
+    return () => {
+      socket.off("game-starting");
+    };
+  }, [socket, roomId, router]);
+
+  const handleStartGame = () => {
+    if (socket && roomId) {
+      socket.emit("start-game", roomId);
+    }
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center p-4">
@@ -113,6 +135,18 @@ export default function RoomDetails({ roomId }) {
           </div>
         </div>
       </div>
+
+      {/* Start Game Button (only visible to creator) */}
+      {user?.id === room.creatorId && (
+        <div className="mt-6">
+          <button
+            onClick={handleStartGame}
+            className="w-full py-3 bg-green-500 text-white rounded-lg font-medium hover:bg-green-400 transition-colors duration-200"
+          >
+            Start Game
+          </button>
+        </div>
+      )}
     </div>
   );
 } 
