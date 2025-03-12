@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useUser } from "@clerk/nextjs";
 import { useSocket } from "../hooks/useSocket";
 import { useRouter } from "next/navigation";
+import { toast } from 'react-hot-toast';
 
 export default function RoomDetails({ roomId }) {
   const [room, setRoom] = useState(null);
@@ -26,6 +27,7 @@ export default function RoomDetails({ roomId }) {
         setRoom(data.room);
       } catch (err) {
         setError(err.message);
+        toast.error(err.message);
       } finally {
         setLoading(false);
       }
@@ -40,6 +42,7 @@ export default function RoomDetails({ roomId }) {
     if (!socket || !roomId) return;
 
     socket.on("game-starting", () => {
+      toast.success("Game is starting!");
       router.push(`/compete?mode=multiplayer&roomId=${roomId}`);
     });
 
@@ -51,6 +54,9 @@ export default function RoomDetails({ roomId }) {
   const handleStartGame = () => {
     if (socket && roomId) {
       socket.emit("start-game", roomId);
+      toast.success("Starting the game...");
+    } else {
+      toast.error("Unable to start game. Please try again.");
     }
   };
 

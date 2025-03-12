@@ -7,6 +7,7 @@ import UserDetails from "../../components/UserDetails"
 import { useUser } from "@clerk/clerk-react"
 import { useSocket } from "../../hooks/useSocket"
 import { useRouter } from "next/navigation"
+import { toast } from 'react-hot-toast'
 
 function Multiplayer() {
   const router = useRouter()
@@ -56,10 +57,10 @@ function Multiplayer() {
     if (createdRoom) {
       try {
         await navigator.clipboard.writeText(createdRoom);
-        alert("Room ID copied to clipboard!");
+        toast.success("Room ID copied to clipboard!");
       } catch (err) {
         console.error("Failed to copy room ID:", err);
-        alert("Failed to copy room ID. Please try again.");
+        toast.error("Failed to copy room ID. Please try again.");
       }
     }
   }
@@ -137,7 +138,7 @@ function Multiplayer() {
           setShowRoomDetails(false);
           setSelectedRoom(null);
           setLoadingDetails(false);
-          alert("This room no longer exists. It may have been deleted by the creator.");
+          toast.error("This room no longer exists. It may have been deleted by the creator.");
           return;
         }
         throw new Error(`Failed to fetch room: ${roomResponse.statusText}`);
@@ -227,7 +228,7 @@ function Multiplayer() {
       console.error("Error fetching room details:", error);
       setRoomDetails(null);
       setShowRoomDetails(false);
-      alert("Failed to join room. Please try again later.");
+      toast.error("Failed to join room. Please try again later.");
     } finally {
       setLoadingDetails(false);
     }
@@ -349,13 +350,12 @@ function Multiplayer() {
       if (selectedRoom && selectedRoom.roomId === roomId) {
         setShowRoomDetails(false);
         setSelectedRoom(null);
-        alert('This room has been deleted by the creator');
+        toast.error('This room has been deleted by the creator');
       } else {
         // Notify users even if they're not viewing the room details
         const deletedRoom = joinedRooms.find(room => room.roomId === roomId);
         if (deletedRoom) {
-          // Show a notification toast or alert
-          alert(`Room "${deletedRoom.roomName || roomId}" has been deleted by the creator`);
+          toast.error(`Room "${deletedRoom.roomName || roomId}" has been deleted by the creator`);
         }
       }
     });
@@ -527,11 +527,11 @@ function Multiplayer() {
       });
       
       if (!isCreator) {
-        alert("Only the room creator can delete a room");
+        toast.error("Only the room creator can delete a room");
       } else if (!socket) {
-        alert("Socket connection is not available. Please refresh the page and try again.");
+        toast.error("Socket connection is not available. Please refresh the page and try again.");
       } else {
-        alert("Unable to delete room. Please try again later.");
+        toast.error("Unable to delete room. Please try again later.");
       }
       
       return;
@@ -570,7 +570,7 @@ function Multiplayer() {
         setSelectedRoom(null);
         
         // Show success message
-        alert('Room deleted successfully');
+        toast.success('Room deleted successfully');
       } else {
         const data = await response.json();
         console.error("API error deleting room:", data.error);
@@ -579,14 +579,14 @@ function Multiplayer() {
           // Room already deleted
           setShowRoomDetails(false);
           setSelectedRoom(null);
-          alert('Room has already been deleted');
+          toast.error('Room has already been deleted');
         } else {
-          alert(data.error || 'Failed to delete room');
+          toast.error(data.error || 'Failed to delete room');
         }
       }
     } catch (error) {
       console.error('Error deleting room:', error);
-      alert('Failed to delete room. Please try again.');
+      toast.error('Failed to delete room. Please try again.');
     }
   };
 
@@ -639,7 +639,7 @@ function Multiplayer() {
               Compete in an official tournament against top players
             </p>
             <button
-              onClick={() => alert("Tournament feature coming soon!")}
+              onClick={() => toast.info("Tournament feature coming soon!")}
               className="w-full py-3 bg-green-500 text-neutral-900 rounded-lg font-medium hover:bg-green-400 transition-colors duration-200"
             >
               Join Tournament

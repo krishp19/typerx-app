@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'react-hot-toast'
 
 function CreateRoomForm({ onRoomCreated }) {
   const { user, isLoaded } = useUser()
@@ -8,7 +9,6 @@ function CreateRoomForm({ onRoomCreated }) {
   const [password, setPassword] = useState('')
   const [maxPlayers, setMaxPlayers] = useState(1)
   const [roomType, setRoomType] = useState('public')
-  const [alert, setAlert] = useState({ show: false, message: '', type: '' })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [roomId, setRoomId] = useState(null)
 
@@ -18,13 +18,13 @@ function CreateRoomForm({ onRoomCreated }) {
     e.preventDefault()
 
     if (!user) {
-      showAlert('You must be logged in to create a room.', 'error')
+      toast.error('You must be logged in to create a room.')
       return
     }
 
     const maxPlayersInt = parseInt(maxPlayers, 10)
     if (!roomName.trim() || maxPlayersInt < 1 || maxPlayersInt > 10) {
-      showAlert('Please enter a valid room name and number of players (1-10).', 'error')
+      toast.error('Please enter a valid room name and number of players (1-10).')
       return
     }
 
@@ -55,12 +55,12 @@ function CreateRoomForm({ onRoomCreated }) {
         data = JSON.parse(responseText);
       } catch (parseError) {
         console.error('Failed to parse JSON:', parseError);
-        showAlert('Invalid response from server. Please try again.', 'error');
+        toast.error('Invalid response from server. Please try again.');
         return;
       }
 
       if (res.ok && data.success) {
-        showAlert(`Room "${roomName}" created successfully!`, 'success')
+        toast.success(`Room "${roomName}" created successfully!`);
         setRoomId(data.room.roomId)
 
         if (typeof onRoomCreated === 'function') {
@@ -71,11 +71,11 @@ function CreateRoomForm({ onRoomCreated }) {
           resetForm()
         }, 3000)
       } else {
-        showAlert(data.error || 'Error creating room.', 'error')
+        toast.error(data.error || 'Error creating room.');
       }
     } catch (error) {
       console.error('Error creating room:', error)
-      showAlert('Something went wrong. Please try again.', 'error')
+      toast.error('Something went wrong. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -88,18 +88,13 @@ function CreateRoomForm({ onRoomCreated }) {
     setRoomType('public')
   }
 
-  const showAlert = (message, type) => {
-    setAlert({ show: true, message, type })
-    setTimeout(() => setAlert({ show: false, message: '', type: '' }), 3000)
-  }
-
   const copyToClipboard = () => {
     if (roomId) {
       navigator.clipboard.writeText(roomId).then(() => {
-        showAlert('Room ID copied to clipboard!', 'success')
+        toast.success('Room ID copied to clipboard!')
       }).catch((err) => {
         console.error('Failed to copy:', err)
-        showAlert('Failed to copy Room ID.', 'error')
+        toast.error('Failed to copy Room ID.')
       })
     }
   }
@@ -112,21 +107,6 @@ function CreateRoomForm({ onRoomCreated }) {
         transition={{ duration: 0.3 }}
         className="bg-neutral-900 p-6 rounded-lg shadow-lg w-96 relative"
       >
-        <AnimatePresence>
-          {alert.show && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className={`fixed top-5 right-5 px-6 py-3 rounded-lg text-white shadow-lg ${
-                alert.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-              }`}
-            >
-              {alert.message}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <h2 className="text-xl font-bold text-white mb-4">Create a Room</h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">

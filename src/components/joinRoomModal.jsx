@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from 'react-hot-toast';
 
 export default function JoinRoomModal({ isOpen, onClose }) {
   const [roomId, setRoomId] = useState("");
@@ -40,17 +41,21 @@ export default function JoinRoomModal({ isOpen, onClose }) {
       // Check if user is already in the room
       if (data.alreadyJoined) {
         // User is already in the room, show a message but still redirect
-        alert(data.message || "You are already in this room");
+        toast.info(data.message || "You are already in this room");
         onClose();
         router.push(`/compete?mode=multiplayer&roomId=${roomId}`);
         return;
       }
 
+      // Show success message
+      toast.success("Successfully joined the room!");
+      
       // Close modal and redirect to compete page
       onClose();
       router.push(`/compete?mode=multiplayer&roomId=${roomId}`);
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
