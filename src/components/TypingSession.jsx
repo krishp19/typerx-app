@@ -8,6 +8,7 @@ const TypingSession = ({ sessionId, userId, modeId, onComplete }) => {
   const [userInput, setUserInput] = useState('');
   const [startTime, setStartTime] = useState(null);
   const [isFinished, setIsFinished] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     wpm: 0,
     accuracy: 0,
@@ -21,9 +22,11 @@ const TypingSession = ({ sessionId, userId, modeId, onComplete }) => {
   useEffect(() => {
     const fetchPracticeText = async () => {
       try {
+        setIsLoading(true);
         // If it's custom mode (modeId === '3'), wait for user input
         if (modeId === '3') {
           setIsCustomMode(true);
+          setIsLoading(false);
           return;
         }
 
@@ -48,6 +51,8 @@ const TypingSession = ({ sessionId, userId, modeId, onComplete }) => {
         }
       } catch (err) {
         toast.error('Failed to load practice text');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -196,15 +201,27 @@ const TypingSession = ({ sessionId, userId, modeId, onComplete }) => {
 
       {/* Typing Text */}
       <div className="relative bg-neutral-900 rounded-xl p-6 mb-6 leading-loose text-lg font-mono text-neutral-400">
-        {text.split('').map((char, index) => {
-          let className = 'text-neutral-400';
-          if (index < userInput.length) {
-            className = userInput[index] === char ? 'text-green-400' : 'bg-red-500 text-white rounded-md px-1';
-          }
-          return <span key={index} className={`${className} transition-colors duration-200`}>{char}</span>;
-        })}
-        {!isFinished && userInput.length < text.length && (
-          <span className="animate-blink text-green-400">|</span>
+        {isLoading ? (
+          <div className="animate-pulse space-y-3">
+            <div className="h-4 bg-neutral-800 rounded w-3/4"></div>
+            <div className="h-4 bg-neutral-800 rounded w-full"></div>
+            <div className="h-4 bg-neutral-800 rounded w-5/6"></div>
+            <div className="h-4 bg-neutral-800 rounded w-4/5"></div>
+          </div>
+        ) : (
+          <div className="relative whitespace-pre-wrap">
+            {text.split('').map((char, index) => {
+              let className = 'text-neutral-400';
+              if (index < userInput.length) {
+                className = userInput[index] === char ? 'text-green-400' : 'bg-red-500 text-white rounded-md px-1';
+              }
+              return (
+                <span key={index} className={`${className} transition-colors duration-200`}>
+                  {char}
+                </span>
+              );
+            })}
+          </div>
         )}
       </div>
 
@@ -214,9 +231,9 @@ const TypingSession = ({ sessionId, userId, modeId, onComplete }) => {
           ref={inputRef}
           value={userInput}
           onChange={handleInput}
-          disabled={isFinished}
+          disabled={isFinished || isLoading}
           className="w-full h-32 bg-neutral-800 text-green-400 rounded-xl p-4 font-mono resize-none focus:outline-none focus:ring-2 focus:ring-green-400"
-          placeholder="Start typing..."
+          placeholder={isLoading ? "Loading practice text..." : "Start typing..."}
         />
         {isFinished && (
           <div className="absolute inset-0 bg-neutral-900/80 rounded-xl flex items-center justify-center">
