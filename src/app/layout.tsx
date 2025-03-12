@@ -1,15 +1,8 @@
-//import type { Metadata } from "next";
-"use client"
-
+import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import CustomNavbar from '../components/customNavbar'
-import Footer from '../components/footer'
-import { ToastContainer } from "react-toastify";
-import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Provider } from "react-redux";
-import {store} from '../redux/store.js'
-import { TypingStatsProvider } from '../context/typingStatsContext.js'
+import "./globals.css";
+import ClientLayout from "../components/ClientLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,30 +14,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-
+export const metadata: Metadata = {
+  title: "TypeRX",
+  description: "Improve your typing skills with customized practice sessions",
+};
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Provider store={store}>
-          <TypingStatsProvider>
-            <ClerkProvider>
-              <ToastContainer/>
-                <CustomNavbar/>
-                  <main className="p-24">
-                    {children}
-                  </main>
-              <Footer/> 
-            </ClerkProvider>
-          </TypingStatsProvider>
-        </Provider>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ClerkProvider>
+          <ClientLayout>{children}</ClientLayout>
+        </ClerkProvider>
       </body>
     </html>
   );

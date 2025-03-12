@@ -152,8 +152,8 @@ function Leaderboard() {
 
           {/* Pagination Controls */}
           <div className="flex justify-center space-x-4 mt-6">
-            <button onClick={prevPage} className="px-4 py-2 bg-green-600 rounded-lg">← </button>
-            <button onClick={nextPage} className="px-4 py-2 bg-green-600 rounded-lg"> →</button>
+            <button onClick={prevPage} className="px-4 py-2 bg-green-600 rounded-lg">← Prev </button>
+            <button onClick={nextPage} className="px-4 py-2 bg-green-600 rounded-lg"> Next →</button>
           </div>
         </main>
       </div>
